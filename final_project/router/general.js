@@ -4,22 +4,11 @@ let isValid = require('./auth_users.js').isValid
 let users = require('./auth_users.js').users
 const public_users = express.Router()
 
-const doesExist = (username) => {
-  let userswithsamename = users.filter((user) => {
-    return user.username === username
-  })
-  if (userswithsamename.length > 0) {
-    return true
-  } else {
-    return false
-  }
-}
-
 public_users.post('/register', (req, res) => {
   const username = req.body.username
   const password = req.body.password
   if (username && password) {
-    if (!doesExist(username)) {
+    if (!isValid(username)) {
       users.push({ username: username, password: password })
       return res
         .status(200)
@@ -32,50 +21,51 @@ public_users.post('/register', (req, res) => {
 })
 
 // Get the book list available in the shop
-public_users.get('/', function (req, res) {
-  return res.send(JSON.stringify(books, null, 4))
+public_users.get('/', async (req, res) => {
+  const listOfBooks = await JSON.stringify(books, null, 4)
+  return res.send(listOfBooks)
 })
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn', function (req, res) {
+public_users.get('/isbn/:isbn', async (req, res) => {
   const isbn = req.params.isbn
-  res.send(books[isbn])
+  const book = await books[isbn]
+  res.send(book)
 })
 
 // Get book details based on author
-public_users.get('/author/:author', function (req, res) {
+public_users.get('/author/:author', async (req, res) => {
   const author = req.params.author
   let temp = []
-  Object.keys(books).forEach((key, idx) => {
+  await Object.keys(books).forEach((key) => {
     if (books[key].author == author) {
-      temp.push(books[key])
+      return temp.push(books[key])
     }
   })
-  console.log(temp)
-
+  // if a book with based on author found
   if (temp) {
     res.send(temp)
+  } else {
+    // if no book based on author found
+    res.send('No book found with this author')
   }
-
-  res.send('No book found with this author')
 })
 
 // Get all books based on title
-public_users.get('/title/:title', function (req, res) {
+public_users.get('/title/:title', async (req, res) => {
   const title = req.params.title
   let temp = []
-  Object.keys(books).forEach((key) => {
+  await Object.keys(books).forEach((key) => {
     if (books[key].title == title) {
       temp.push(books[key])
     }
   })
-  console.log(temp)
 
   if (temp) {
-    res.send(temp)
+    return res.send(temp)
   }
 
-  res.send('No book found with this title')
+  return res.send('No book found with this title')
 })
 
 //  Get book review
